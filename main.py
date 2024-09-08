@@ -12,20 +12,20 @@ app = FastAPI()
 
 
 @app.get("/")
-def read_root():
+def get_test():
     print(app.openapi())
     return {"Hello": "World"}
 
 
 # 根据编号查询（方便快速查询，后面应该有地方会用到）
 @app.get("/item/{item_id}")
-def read_item(item_id: str):
+def get_info(item_id: str):
     return info.get_info(0, item_id)
 
 
 # 根据解码值查询
 @app.get("/qrdecode/{qrdecode_str}")
-def read_item(qrdecode_str: str):
+def get_info(qrdecode_str: str):
     return info.get_info(1, qrdecode_str)
 
 
