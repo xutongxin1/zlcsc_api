@@ -9,7 +9,7 @@ http://localhost:8080/qrdecode/{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qt
 """
 
 app = FastAPI()
-
+info = InfoSpider()
 
 @app.get("/")
 def get_test():
@@ -29,6 +29,11 @@ def get_info(qrdecode_str: str):
     return info.get_info(1, qrdecode_str)
 
 
+# # 根据url查询
+# @app.get("/url/")
+# def get_info(url: str):
+#     return info.get_info(2, url)
+
+
 if __name__ == "__main__":
-    info = InfoSpider()
     uvicorn.run(app, host="0.0.0.0", port=8080)
