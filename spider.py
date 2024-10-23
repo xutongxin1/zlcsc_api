@@ -3,6 +3,7 @@ from lxml import etree  # 对已经获得的数据作预处理
 import re
 import json
 import urllib.parse
+import re
 
 
 class InfoSpider:
@@ -65,7 +66,8 @@ class InfoSpider:
             return None
 
     # 从搜索页面获取第一个元器件的详情页面
-    def search_spider(self, url):
+    def search_spider(self, CID):
+        url = 'https://so.szlcsc.com/global.html?k=' + str(CID) + '&hot-key=AFC01-S24FCA-00&searchSource='
         headers = {
             "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
         }
@@ -74,16 +76,18 @@ class InfoSpider:
         lists = data.xpath(
             '/html/body/div[7]/div/form/div[4]/div[1]/div[1]/div[4]/table/tbody/tr[1]/td/div[2]/div/div[1]/div[1]/ul[1]/li[1]/a/@href')
         # print(lists[0])
+        if len(lists) == 0:
+            return None
         return lists[0]
 
     # 元器件详情页面信息爬取
-    def component_page_spider(self, CID):
-        url = 'https://so.szlcsc.com/global.html?k=' + str(CID) + '&hot-key=AFC01-S24FCA-00&searchSource='
+    def component_page_spider(self, page_url):
+
         # 浏览器类型 模拟浏览器请求
         headers = {
             "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
         }
-        res = requests.get(url, headers=headers).text
+        res = requests.get(page_url, headers=headers).text
         data = etree.HTML(res)
         # print(etree.tostring(data, pretty_print=True).decode())
         section_element = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
@@ -113,9 +117,16 @@ class InfoSpider:
 
         # print(lists[0])  # 类  0  1 2 3 4 5
         return info_dic
-    def component_picture_spider(self,CID):
 
-        url = 'https://item.szlcsc.com/product/jpg_'+ str(CID) +'.html'
+    def component_picture_spider(self, CID):
+        url = 'https://item.szlcsc.com/product/jpg_' + str(CID) + '.html'
+        headers = {
+            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
+        }
+        res = requests.get(url, headers=headers).text
+        data = etree.HTML(res)
+        # print(etree.tostring(data, pretty_print=True).decode())
+        section_element = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
 
     # 二维码字符串解析出有效编号
     def decoder(self, str):
@@ -127,27 +138,42 @@ class InfoSpider:
         # print(match.group(1))
         return match.group(1)
 
-    # 返回结果
-    def get_info(self, option: int, data):
+    # 主函数，返回json结果
+    def main_getInfo(self, option: int, data):
         # 1 qrdecode
         # 0 items
+        CID: str = "C123131231"
         if option == 1:  # 如果使用的是二维码输入
             CID = self.decoder(data)  # 解析编号出来
-            page_url = self.search_spider(CID)
         elif option == 0:
             CID = data
-            page_url = self.search_spider(CID)
+
         # else:
         #     page_url = data
+        # Input URL
+
+        page_url = self.search_spider(CID)
+        if page_url is None:  # 检查链接是否存在
+            return None
+        if not page_url.startswith("https://item.szlcsc.com/"):
+            return None
+        url = "https://item.szlcsc.com/324135.html?fromZone=l_c__%2522catalog%2522"
+
+        # Using regex to extract the digits before '.html'
+        match = re.search(r'/(\d+)\.html', url)
+
+        # Extracted number
+        PID = match.group(1) if match else None
 
         print(page_url)
         pageInfo = self.component_page_spider(page_url)
 
-        return
+        return pageInfo
 
 
 if __name__ == "__main__":
     info = InfoSpider()
-    code = info.get_info(1, "{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qty:20,mc:null,cc:1,pdi:114326866,hp:0}")
-    info.get_info(0, "C16780")
+    code = info.main_getInfo(1,
+                             "{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qty:20,mc:null,cc:1,pdi:114326866,hp:0}")
+    info.main_getInfo(0, "C16780")
     print(code)

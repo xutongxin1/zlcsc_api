@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from spider import InfoSpider
 
 ### TODO: 两种请求方法如下    1. 根据编号查询   2. 根据qrcode解码值
@@ -11,6 +11,7 @@ http://localhost:8080/qrdecode/{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qt
 app = FastAPI()
 info = InfoSpider()
 
+
 @app.get("/")
 def get_test():
     print(app.openapi())
@@ -18,21 +19,30 @@ def get_test():
 
 
 # 根据编号查询（方便快速查询，后面应该有地方会用到）
-@app.get("/item/{item_id}")
-def get_info(item_id: str):
-    return info.get_info(0, item_id)
+@app.get("/item/{CID}")
+def get_info(CID: str):
+    result = info.main_getInfo(0, CID)
+    if result is None:
+        raise  HTTPException(status_code=406, detail="无法搜索到该器件")
+    return result
 
 
 # 根据解码值查询
 @app.get("/qrdecode/{qrdecode_str}")
 def get_info(qrdecode_str: str):
-    return info.get_info(1, qrdecode_str)
+    result = info.main_getInfo(1, qrdecode_str)
+    if result is None:
+        raise  HTTPException(status_code=406, detail="无法搜索到该器件")
+    return result
 
 
-# # 根据url查询
-# @app.get("/url/")
-# def get_info(url: str):
-#     return info.get_info(2, url)
+# 根据url查询
+@app.get("/component_picture/{CID}")
+def get_info(CID: str):
+    result = info.component_picture_spider(CID)
+    if result is None:
+        raise  HTTPException(status_code=406, detail="无法搜索到该器件")
+    return result
 
 
 if __name__ == "__main__":
