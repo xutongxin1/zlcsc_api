@@ -66,7 +66,7 @@ class InfoSpider:
             return None
 
     # 从搜索页面获取第一个元器件的详情页面
-    def search_spider(self, CID):
+    def search_page_spider(self, CID):
         url = 'https://so.szlcsc.com/global.html?k=' + str(CID) + '&hot-key=AFC01-S24FCA-00&searchSource='
         headers = {
             "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
@@ -129,7 +129,7 @@ class InfoSpider:
         section_element = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
 
     # 二维码字符串解析出有效编号
-    def decoder(self, str):
+    def decode_RWM(self, str):
         # 定义一个正则表达式来匹配'pc'后面的值
         pattern = r"pc:([^,}]+)"
 
@@ -144,7 +144,7 @@ class InfoSpider:
         # 0 items
         CID: str = "C123131231"
         if option == 1:  # 如果使用的是二维码输入
-            CID = self.decoder(data)  # 解析编号出来
+            CID = self.decode_RWM(data)  # 解析编号出来
         elif option == 0:
             CID = data
 
@@ -152,7 +152,7 @@ class InfoSpider:
         #     page_url = data
         # Input URL
 
-        page_url = self.search_spider(CID)
+        page_url = self.search_page_spider(CID)
         if page_url is None:  # 检查链接是否存在
             return None
         if not page_url.startswith("https://item.szlcsc.com/"):
