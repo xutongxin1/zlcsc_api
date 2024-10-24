@@ -23,7 +23,7 @@ def get_test():
 def get_info(CID: str):
     result = info.main_getInfo(0, CID)
     if result is None:
-        raise  HTTPException(status_code=406, detail="无法搜索到该器件")
+        raise  HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
 
@@ -32,16 +32,16 @@ def get_info(CID: str):
 def get_info(qrdecode_str: str):
     result = info.main_getInfo(1, qrdecode_str)
     if result is None:
-        raise  HTTPException(status_code=406, detail="无法搜索到该器件")
+        raise  HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
 
 # 根据url查询
-@app.get("/component_picture/{CID}")
-def get_info(CID: str):
-    result = info.component_picture_spider(CID)
+@app.get("/component_picture/{PID}")
+def get_info(PID: str):
+    result = info.component_picture_spider(PID)
     if result is None:
-        raise  HTTPException(status_code=406, detail="无法搜索到该器件")
+        raise  HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
 

@@ -61,6 +61,8 @@ def decode_filename_from_url(url):
         return None
 
 class InfoSpider:
+    errorMessage: str = "无法搜索到该器件"
+
     def __init__(self):
         print("init")
 
@@ -75,12 +77,12 @@ class InfoSpider:
         lists = data.xpath(
             '/html/body/div[7]/div/form/div[4]/div[1]/div[1]/div[4]/table/tbody/tr[1]/td/div[2]/div/div[1]/div[1]/ul[1]/li[1]/a/@href')
         # print(lists[0])
-        if len(lists) == 0:
+        if len(lists) == 0:  # 如果没这个链接
             return None
         return lists[0]
 
     # 元器件详情页面信息爬取
-    def component_page_spider(self, page_url):
+    def component_page_spider(self, page_url, CID):
 
         # 浏览器类型 模拟浏览器请求
         headers = {
@@ -88,15 +90,21 @@ class InfoSpider:
         }
         res = requests.get(page_url, headers=headers).text
         data = etree.HTML(res)
+
+        # 首先确定这个信息是否正确
+        if data.xpath('//div/div/main/div/div[1]/div/div[1]/div[1]/div[2]/div[3]/ul[1]/li[5]/span/text()')[0] != CID:
+            self.errorMessage = "在搜索页面中无法找到该器件"
+            return None
+
         # print(etree.tostring(data, pretty_print=True).decode())
+        # 读取商品参数
         section_element = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
-
         features = self.extract_features_from_etree(section_element)
+        product_parameters = "；".join([f"{key}：{value}" for key, value in features.items()])
+        product_parameters += "；"
+        # print(product_parameters)
 
-        productParameters = "；".join([f"{key}：{value}" for key, value in features.items()])
-        productParameters += "；"
-        print(productParameters)
-        # 具体信息获取
+        # 其他具体信息获取
         info_dic = {
             '品牌名称': data.xpath('//div/div/main/div/div[1]/div/div[1]/div[1]/div[2]/div[3]/ul[1]/li[3]/a/text()')[0],
             '商品型号': data.xpath('//div/div/main/div/div[1]/div/div[1]/div[1]/div[2]/div[3]/ul[1]/li[4]/span/text()')[
@@ -111,21 +119,28 @@ class InfoSpider:
             '数据手册': data.xpath('//div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib['href'],
             '数据手册名称': self.decode_filename_from_url(
                 data.xpath('//div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib['href']),
-            '商品详细': productParameters
+            '商品详细': product_parameters
         }
 
-        # print(lists[0])  # 类  0  1 2 3 4 5
         return info_dic
 
-    def component_picture_spider(self, CID):
-        url = 'https://item.szlcsc.com/product/jpg_' + str(CID) + '.html'
+    def component_picture_spider(self, PID: str):
+        url = 'https://item.szlcsc.com/product/jpg_' + str(PID) + '.html'
         headers = {
             "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
         }
         res = requests.get(url, headers=headers).text
         data = etree.HTML(res)
         # print(etree.tostring(data, pretty_print=True).decode())
-        section_element = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
+        img_links = []
+        section_element = data.xpath('/html/body/div/div/div/div/section/div/div[1]/ul')[0]
+        if len(section_element) == 0:
+            return None
+        for ul in section_element:
+            # 在每个 ul 下查找 img 标签，并提取 src 属性
+            img_src = ul.xpath(".//img/@src")
+            img_links.extend(img_src)
+        return img_links
 
     # 二维码字符串解析出有效编号
     def decode_RWM(self, str):
@@ -136,6 +151,16 @@ class InfoSpider:
         match = re.search(pattern, str)
         # print(match.group(1))
         return match.group(1)
+
+    def eda_spider(self, CID: str):
+        url = 'https://lceda.cn/api/products/' + CID + '/svgs'
+        headers = {
+            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
+        }
+        res = json.loads(requests.get(url, headers=headers).text)
+
+        svg_values = [item['svg'] for item in res['result']]
+        return svg_values
 
     # 主函数，返回json结果
     def main_getInfo(self, option: int, data):
@@ -148,26 +173,40 @@ class InfoSpider:
             CID = data
 
         # else:
-        #     page_url = data
+        #     component_page_url = data
         # Input URL
 
-        page_url = self.search_page_spider(CID)
-        if page_url is None:  # 检查链接是否存在
+        component_page_url = self.search_page_spider(CID)
+        if component_page_url is None:  # 检查链接是否存在
+            self.errorMessage = "在搜索页面中无法找到该器件"
             return None
-        if not page_url.startswith("https://item.szlcsc.com/"):
+        if not component_page_url.startswith("https://item.szlcsc.com/"):
+            self.errorMessage = "搜索失败，意外错误"
             return None
-        url = "https://item.szlcsc.com/324135.html?fromZone=l_c__%2522catalog%2522"
 
         # Using regex to extract the digits before '.html'
-        match = re.search(r'/(\d+)\.html', url)
+        match = re.search(r'/(\d+)\.html', component_page_url)
 
         # Extracted number
         PID = match.group(1) if match else None
 
-        print(page_url)
-        pageInfo = self.component_page_spider(page_url)
+        print(PID)
+        component_info = self.component_page_spider(component_page_url, CID)
+        if component_info is None:
+            return None
+        picture_info = self.component_picture_spider(PID)
+        if picture_info is None:
+            component_info['图片链接'] = "无图片"
+        else:
+            component_info['图片链接'] = picture_info
 
-        return pageInfo
+        eda_info = self.eda_spider(CID)
+        if eda_info is None:
+            component_info['EDA链接'] = "无EDA文件"
+        else:
+            component_info['EDA链接'] = eda_info
+
+        return component_info
 
 
 if __name__ == "__main__":
