@@ -5,65 +5,64 @@ import json
 import urllib.parse
 import re
 
+# 从元器件详情页面提取特征
+def extract_features_from_etree(section_element):
+    """
+    Extract features from the given section element.
+
+    Args:
+        section_element (etree.Element): The section element from which to extract features.
+
+    Returns:
+        dict: A dictionary containing the extracted features.
+    """
+    features = {}
+    # 找到所有 class 为 'ant-table-tbody' 的 tbody 元素
+    tbodies = section_element.xpath(".//tbody[@class='ant-table-tbody']")
+    for tbody in tbodies:
+        # 找到所有 tr 元素
+        trs = tbody.xpath(".//tr")
+        for tr in trs:
+            # 找到所有 td 元素
+            tds = tr.xpath(".//td")
+            if len(tds) >= 3:
+                # 提取属性和参数值
+                attribute_td = tds[1]
+                value_td = tds[2]
+                attribute = ''.join(attribute_td.itertext()).strip()
+                value = ''.join(value_td.itertext()).strip()
+                features[attribute] = value
+    return features
+
+# 从数据手册链接中提取文件名
+def decode_filename_from_url(url):
+    """
+    Decode the filename from the given URL.
+
+    Args:
+        url (str): The URL from which to decode the filename.
+
+    Returns:
+        str: The decoded filename, or None if not found.
+    """
+    # 解析URL并提取查询参数
+    parsed_url = urllib.parse.urlparse(url)
+    query_params = urllib.parse.parse_qs(parsed_url.query)
+
+    # 文件名在'response-content-disposition'参数中
+    if 'response-content-disposition' in query_params:
+        # 从content disposition中提取'filename'部分
+        content_disposition = query_params['response-content-disposition'][0]
+        filename = content_disposition.split('filename=')[-1]
+        # 解码文件名
+        decoded_filename = urllib.parse.unquote(filename)
+        return decoded_filename
+    else:
+        return None
 
 class InfoSpider:
     def __init__(self):
         print("init")
-
-    # 从元器件详情页面提取特征
-    def extract_features_from_etree(self, section_element):
-        """
-        Extract features from the given section element.
-
-        Args:
-            section_element (etree.Element): The section element from which to extract features.
-
-        Returns:
-            dict: A dictionary containing the extracted features.
-        """
-        features = {}
-        # 找到所有 class 为 'ant-table-tbody' 的 tbody 元素
-        tbodies = section_element.xpath(".//tbody[@class='ant-table-tbody']")
-        for tbody in tbodies:
-            # 找到所有 tr 元素
-            trs = tbody.xpath(".//tr")
-            for tr in trs:
-                # 找到所有 td 元素
-                tds = tr.xpath(".//td")
-                if len(tds) >= 3:
-                    # 提取属性和参数值
-                    attribute_td = tds[1]
-                    value_td = tds[2]
-                    attribute = ''.join(attribute_td.itertext()).strip()
-                    value = ''.join(value_td.itertext()).strip()
-                    features[attribute] = value
-        return features
-
-    # 从数据手册链接中提取文件名
-    def decode_filename_from_url(self, url):
-        """
-        Decode the filename from the given URL.
-
-        Args:
-            url (str): The URL from which to decode the filename.
-
-        Returns:
-            str: The decoded filename, or None if not found.
-        """
-        # 解析URL并提取查询参数
-        parsed_url = urllib.parse.urlparse(url)
-        query_params = urllib.parse.parse_qs(parsed_url.query)
-
-        # 文件名在'response-content-disposition'参数中
-        if 'response-content-disposition' in query_params:
-            # 从content disposition中提取'filename'部分
-            content_disposition = query_params['response-content-disposition'][0]
-            filename = content_disposition.split('filename=')[-1]
-            # 解码文件名
-            decoded_filename = urllib.parse.unquote(filename)
-            return decoded_filename
-        else:
-            return None
 
     # 从搜索页面获取第一个元器件的详情页面
     def search_page_spider(self, CID):
