@@ -62,7 +62,11 @@ def decode_filename_from_url(url):
         decoded_filename = urllib.parse.unquote(filename)
         return decoded_filename
     else:
-        return None
+        match = re.search(r'([^/]+\.pdf)', url)
+        if match:
+            return match.group(1)
+        else:
+            return "数据手册《未知名称》"
 
 
 def get_product_parameters(code):
@@ -145,11 +149,20 @@ class InfoSpider:
             info_dic['商品参数'] = product_parameters
         else:
             info_dic['商品参数'] = "参数完善中"
+        more_data = data.xpath('/html/body/script[1]')[0].text
+        more_data = json.loads(more_data)
 
-        info_dic['数据手册'] = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib[
-            'href']
-        info_dic['数据手册名称'] = decode_filename_from_url(
-            data.xpath('//div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib['href'])
+        # 提取pdfFileUrl
+        pdf_file_url = more_data['props']['pageProps']['webData']['productRecord']['pdfFileUrl']
+
+        # 提取unWaterMarkImageUrls，使用'$\u003e'作为分隔符
+        un_water_mark_image_urls_str = more_data['props']['pageProps']['webData']['productRecord'][
+            'unWaterMarkImageUrls']
+        un_water_mark_image_urls = un_water_mark_image_urls_str.split("\u003c$\u003e")
+        info_dic['数据手册'] = "https://atta.szlcsc.com/"+pdf_file_url
+        info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
+
+        info_dic['图片链接'] = un_water_mark_image_urls
 
         return info_dic
 
