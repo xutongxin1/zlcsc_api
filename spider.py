@@ -111,7 +111,7 @@ class InfoSpider:
         res = requests.get(page_url, headers=headers).text
         data = etree.HTML(res)
 
-        # 首先确定这个信息是否正确
+        # 首先确定这个信息是否正确,CID校验
         for index in range(4, 8):
             if data.xpath(
                     f'/html/body/div/div/main/div/div[1]/div/div[1]/div[1]/div[2]/div[3]/ul[1]/li[{index}]/span/text()')[
@@ -151,16 +151,24 @@ class InfoSpider:
             info_dic['商品参数'] = "参数完善中"
         more_data = data.xpath('/html/body/script[1]')[0].text
         more_data = json.loads(more_data)
-
-        # 提取pdfFileUrl
-        pdf_file_url = more_data['props']['pageProps']['webData']['productRecord']['pdfFileUrl']
-
-        # 提取unWaterMarkImageUrls，使用'$\u003e'作为分隔符
         un_water_mark_image_urls_str = more_data['props']['pageProps']['webData']['productRecord'][
             'unWaterMarkImageUrls']
         un_water_mark_image_urls = un_water_mark_image_urls_str.split("\u003c$\u003e")
-        info_dic['数据手册'] = "https://atta.szlcsc.com/"+pdf_file_url
-        info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
+
+        if '描述' not in info_dic:
+            if more_data['props']['pageProps']['webData']['productRecord']['productName'] is not None:
+                info_dic['描述'] = more_data['props']['pageProps']['webData']['productRecord']['productName']
+        # 提取pdfFileUrl
+        pdf_file_url = more_data['props']['pageProps']['webData']['productRecord']['pdfFileUrl']
+        if pdf_file_url is None:
+            pdf_file_url = \
+                data.xpath('/html/body/div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib['href']
+            info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
+            info_dic['数据手册'] = pdf_file_url.split('?')[0]
+        # 提取unWaterMarkImageUrls，使用'$\u003e'作为分隔符
+        else:
+            info_dic['数据手册'] = "https://atta.szlcsc.com/" + pdf_file_url
+            info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
 
         info_dic['图片链接'] = un_water_mark_image_urls
 
