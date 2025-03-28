@@ -1,3 +1,4 @@
+import requests
 from lxml import etree  # 对已经获得的数据作预处理
 import re
 import json
@@ -90,40 +91,53 @@ class InfoSpider:
     # 从搜索页面获取第一个元器件的详情页面
     def search_page_spider(self, CID):
         url = 'https://so.szlcsc.com/global.html?k=' + str(CID)
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            ua = (
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-            )
-            page = browser.new_page(user_agent=ua)
-            page.goto(url, wait_until="domcontentloaded")
-            print(page.title())
-            html_content = page.content()
-            data = etree.HTML(html_content)
-            pid = data.xpath('//div[@id="shop-list"]/table[1]/@pid')
 
-            browser.close()
-            if pid:
-                print(f"The pid value is: {pid[0]}")
-                return "https://item.szlcsc.com/" + pid[0] + ".html"
-            else:
-                print("No pid found")
-                return None
+        # with sync_playwright() as p:
+        #     browser = p.chromium.launch()
+        #     ua = (
+        #         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        #     )
+        #     page = browser.new_page(user_agent=ua)
+        #     page.goto(url, wait_until="domcontentloaded")
+        #     print(page.title())
+        #     html_content = page.content()
+        #     browser.close()
+
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+        }
+        html_content = requests.get(url, headers=headers).text
+
+        data = etree.HTML(html_content)
+        pid = data.xpath('//div[@id="shop-list"]/table[1]/@pid')
+
+        if pid:
+            print(f"The pid value is: {pid[0]}")
+            return "https://item.szlcsc.com/" + pid[0] + ".html"
+        else:
+            print("No pid found")
+            return None
 
     # 元器件详情页面信息爬取
     def component_page_spider(self, page_url, CID):
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            ua = (
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-            )
-            page = browser.new_page(user_agent=ua)
-            page.goto(page_url, wait_until="domcontentloaded")
-            print(page.title())
-            html_content = page.content()
-            data = etree.HTML(html_content)
-            browser.close()
+        # with sync_playwright() as p:
+        #     browser = p.chromium.launch()
+        #     ua = (
+        #         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        #     )
+        #     page = browser.new_page(user_agent=ua)
+        #     page.goto(page_url, wait_until="domcontentloaded")
+        #     print(page.title())
+        #     html_content = page.content()
+        #     browser.close()
+
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+        }
+        html_content = requests.get(page_url, headers=headers).text
+        data = etree.HTML(html_content)
+
 
         # 首先确定这个信息是否正确,CID校验
         for index in range(0, 9):
@@ -194,21 +208,25 @@ class InfoSpider:
     def component_picture_spider(self, PID: str):
         url = 'https://item.szlcsc.com/product/jpg_' + str(PID) + '.html'
 
-        with sync_playwright() as p:
-            browser = p.chromium.launch()
-            ua = (
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-            )
-            page = browser.new_page(user_agent=ua)
-            page.goto(url, wait_until="domcontentloaded")
-            print(page.title())
-            html_content = page.content()
-            data = etree.HTML(html_content)
-            browser.close()
+        # with sync_playwright() as p:
+        #     browser = p.chromium.launch()
+        #     ua = (
+        #         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        #     )
+        #     page = browser.new_page(user_agent=ua)
+        #     page.goto(url, wait_until="domcontentloaded")
+        #     html_content = page.content()
+        #     browser.close()
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
+        }
+        html_content = requests.get(url, headers=headers).text
+        data = etree.HTML(html_content)
+
 
         # print(etree.tostring(data, pretty_print=True).decode())
         img_links = []
-        section_element = data.xpath('/html/body/div/div/div/div/section/div/div[1]/ul')[0]
+        section_element = data.xpath('/html/body/div[1]/div/div/div/div/section[1]/div/div[2]/div')[0]
         if len(section_element) == 0:
             return None
         for ul in section_element:

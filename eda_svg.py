@@ -6,7 +6,8 @@ from lxml import etree as et
 import os
 import glob
 
-def pcb_svg(svg_code:str,index:int):
+
+def pcb_svg(svg_code: str, index: int):
     # 注册SVG命名空间，避免输出时出现ns0前缀
     ET.register_namespace('', 'http://www.w3.org/2000/svg')
 
@@ -15,7 +16,6 @@ def pcb_svg(svg_code:str,index:int):
 
     # 定义SVG命名空间
     ns = {'svg': 'http://www.w3.org/2000/svg'}
-
     # 查找所有符合条件的 <g> 元素
     part_pads = root.findall('.//svg:g[@c_partid="part_pad"][@c_etype="pinpart"]', ns)
 
@@ -27,7 +27,7 @@ def pcb_svg(svg_code:str,index:int):
         'stroke-width': '0.005',
         'text-anchor': 'middle',
         'fill': '#FFFFFF',
-        'stroke': '#000000'        # 设定描边颜色
+        'stroke': '#000000'  # 设定描边颜色
     })
 
     # 添加初始的 <text> 元素
@@ -65,7 +65,8 @@ def pcb_svg(svg_code:str,index:int):
 
     return new_svg_content
 
-def sch_svg(svg_code:str,index:int):
+
+def sch_svg(svg_code: str, index: int):
     # Parse the SVG code with lxml.etree
     try:
         parser = et.XMLParser(ns_clean=True, recover=True)
@@ -112,7 +113,7 @@ def sch_svg(svg_code:str,index:int):
     return modified_svg
 
 
-def get_svgs(product_code:str):
+def get_svgs(product_code: str):
     url = f"https://lceda.cn/api/products/{product_code}/svgs"
     try:
         response = requests.get(url)
@@ -133,11 +134,12 @@ def get_svgs(product_code:str):
     except Exception:
         return None
 
+
 def process_svgs(product_code):
     svg_data = get_svgs(product_code)
     if svg_data is None:
         print("Failed to retrieve SVG data.")
-        return None,None
+        return None, None
 
     sch = {}
     pcb = {}
@@ -161,10 +163,9 @@ def process_svgs(product_code):
     return sch, pcb
 
 
-
 if __name__ == '__main__':
 
-    #删除doc文件夹下的所有文件
+    # 删除doc文件夹下的所有文件
     # 设置文件夹路径
     folder_path = './doc'
     # 查找doc文件夹中的所有文件

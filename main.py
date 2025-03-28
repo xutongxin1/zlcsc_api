@@ -10,10 +10,10 @@ from playwright.sync_api import sync_playwright
 
 ### TODO: 两种请求方法如下    1. 根据编号查询   2. 根据qrcode解码值
 """
-http://localhost:8080/item/C16133
-http://localhost:8080/qrdecode/{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qty:20,mc:null,cc:1,pdi:114326866,hp:0}
+http://localhost:8000/item/C16133
+http://localhost:8000/qrdecode/{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qty:20,mc:null,cc:1,pdi:114326866,hp:0}
 """
-
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 app = FastAPI()
 info = InfoSpider()
 
@@ -50,16 +50,6 @@ def get_info(PID: str):
         raise HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
-
-class ProactorServer(uvicorn.Server):
-    def run(self, sockets=None):
-        loop = ProactorEventLoop()
-        asyncio.set_event_loop(loop)  # since this is the default in Python 3.10, explicit selection can also be omitted
-        asyncio.run(self.serve(sockets=sockets))
-
-
 if __name__ == '__main__':
-    config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, reload=True)
-    server = ProactorServer(config=config)
-    server.run()
+   uvicorn.run(app='main:app', host="0.0.0.0", port=8000, reload=True)
 
