@@ -1,5 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="运行" type="Python.FastAPI">
+    <option name="additionalOptions" />
     <option name="file" value="C:\GitProject\zlcsc_api\main.py" />
     <module name="zlcsc_api" />
     <option name="ENV_FILES" value="" />

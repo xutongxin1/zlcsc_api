@@ -1,11 +1,13 @@
-import requests
 from lxml import etree  # 对已经获得的数据作预处理
 import re
 import json
 import urllib.parse
 import re
 
+from playwright.sync_api import sync_playwright
+
 from eda_svg import pcb_svg, process_svgs
+from playwright.async_api import async_playwright
 
 
 # 从元器件详情页面提取特征
@@ -88,46 +90,61 @@ class InfoSpider:
     # 从搜索页面获取第一个元器件的详情页面
     def search_page_spider(self, CID):
         url = 'https://so.szlcsc.com/global.html?k=' + str(CID)
-        headers = {
-            "Referer": "https://so.szlcsc.com/",
-            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
-        }
-        res = requests.get(url, headers=headers).text
-        data = etree.HTML(res)
-        lists = data.xpath(
-            '/html/body/div[7]/div/form/div[4]/div[1]/div[1]/div[4]/table/tbody/tr[1]/td/div[2]/div/div[1]/div[1]/ul[1]/li[1]/a/@href')
-        # print(lists[0])
-        if len(lists) == 0:  # 如果没这个链接
-            return None
-        return lists[0]
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            ua = (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+            )
+            page = browser.new_page(user_agent=ua)
+            page.goto(url, wait_until="domcontentloaded")
+            print(page.title())
+            html_content = page.content()
+            data = etree.HTML(html_content)
+            pid = data.xpath('//div[@id="shop-list"]/table[1]/@pid')
+
+            browser.close()
+            if pid:
+                print(f"The pid value is: {pid[0]}")
+                return "https://item.szlcsc.com/" + pid[0] + ".html"
+            else:
+                print("No pid found")
+                return None
 
     # 元器件详情页面信息爬取
     def component_page_spider(self, page_url, CID):
 
-        # 浏览器类型 模拟浏览器请求
-        headers = {
-            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
-        }
-        res = requests.get(page_url, headers=headers).text
-        data = etree.HTML(res)
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            ua = (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+            )
+            page = browser.new_page(user_agent=ua)
+            page.goto(page_url, wait_until="domcontentloaded")
+            print(page.title())
+            html_content = page.content()
+            data = etree.HTML(html_content)
+            browser.close()
 
         # 首先确定这个信息是否正确,CID校验
-        for index in range(4, 8):
-            if data.xpath(
-                    f'/html/body/div/div/main/div/div[1]/div/div[1]/div[1]/div[2]/div[3]/ul[1]/li[{index}]/span/text()')[
-                0] == CID:
-                break
-            if index == 6:
+        for index in range(0, 9):
+            if index == 9:
                 self.errorMessage = "在搜索页面中无法找到该器件"
                 return None
+            if not data.xpath(
+                    f'/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl/div[{index}]/dd/text()'):
+                continue
+            if data.xpath(f'/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl/div[{index}]/dd/text()')[
+                0] == CID:
+                print("CID校验成功")
+                break
 
         # print(etree.tostring(data, pretty_print=True).decode())
         # 读取商品参数
 
         info_dic = {}
         # 其他具体信息获取
-        detail = data.xpath('//div/div/main/div/div[1]/div/div[1]/div[1]/div[2]/div[3]')[0]
-        lis = detail.xpath('//li[@class="flex mt-[16px]"]')
+        detail = data.xpath('/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl')[0]
+        lis = detail.xpath('//div[@class="flex mt-[16px]"]')
         for li in lis:
             # 获取标签元素（可能是<p>或<span>）
             label_elem = li.xpath('.//*[contains(@class, "text-[#69788A] w-[70px]")]')[0]
@@ -152,14 +169,14 @@ class InfoSpider:
         more_data = data.xpath('/html/body/script[1]')[0].text
         more_data = json.loads(more_data)
         un_water_mark_image_urls_str = more_data['props']['pageProps']['webData']['productRecord'][
-            'unWaterMarkImageUrls']
+            'breviaryImageUrl']
         un_water_mark_image_urls = un_water_mark_image_urls_str.split("\u003c$\u003e")
 
         if '描述' not in info_dic:
             if more_data['props']['pageProps']['webData']['productRecord']['productName'] is not None:
                 info_dic['描述'] = more_data['props']['pageProps']['webData']['productRecord']['productName']
         # 提取pdfFileUrl
-        pdf_file_url = more_data['props']['pageProps']['webData']['productRecord']['pdfFileUrl']
+        pdf_file_url = more_data['props']['pageProps']['webData']['productRecord']['fileTypeVOList'][0]['detailVOList'][0]['fileUrl']
         if pdf_file_url is None:
             pdf_file_url = \
                 data.xpath('/html/body/div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib['href']
@@ -176,11 +193,19 @@ class InfoSpider:
 
     def component_picture_spider(self, PID: str):
         url = 'https://item.szlcsc.com/product/jpg_' + str(PID) + '.html'
-        headers = {
-            "User_Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.54 Safari/537.36"
-        }
-        res = requests.get(url, headers=headers).text
-        data = etree.HTML(res)
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            ua = (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+            )
+            page = browser.new_page(user_agent=ua)
+            page.goto(url, wait_until="domcontentloaded")
+            print(page.title())
+            html_content = page.content()
+            data = etree.HTML(html_content)
+            browser.close()
+
         # print(etree.tostring(data, pretty_print=True).decode())
         img_links = []
         section_element = data.xpath('/html/body/div/div/div/div/section/div/div[1]/ul')[0]
@@ -220,9 +245,6 @@ class InfoSpider:
         if component_page_url is None:  # 检查链接是否存在
             self.errorMessage = "在搜索页面中无法找到该器件"
             return None
-        if not component_page_url.startswith("https://item.szlcsc.com/"):
-            self.errorMessage = "搜索失败，意外错误"
-            return None
 
         # Using regex to extract the digits before '.html'
         match = re.search(r'/(\d+)\.html', component_page_url)
@@ -255,7 +277,4 @@ class InfoSpider:
 
 if __name__ == "__main__":
     info = InfoSpider()
-    code = info.main_getInfo(1,
-                             "{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qty:20,mc:null,cc:1,pdi:114326866,hp:0}")
-    info.main_getInfo(0, "C16780")
-    print(code)
+    print(info.component_page_spider("https://item.szlcsc.com/16815.html","16815"))

@@ -1,10 +1,16 @@
+import asyncio
+from asyncio import ProactorEventLoop
+
 import uvicorn
 from fastapi import FastAPI, HTTPException
+from uvicorn import Config, Server
+
 from spider import InfoSpider
+from playwright.sync_api import sync_playwright
 
 ### TODO: 两种请求方法如下    1. 根据编号查询   2. 根据qrcode解码值
 """
-http://localhost:8080/item/C16781
+http://localhost:8080/item/C16133
 http://localhost:8080/qrdecode/{on:SO24051710142,pc:C16780,pm:CL21A476MQYNNNE,qty:20,mc:null,cc:1,pdi:114326866,hp:0}
 """
 
@@ -23,7 +29,7 @@ def get_test():
 def get_info(CID: str):
     result = info.main_getInfo(0, CID)
     if result is None:
-        raise  HTTPException(status_code=406, detail=info.errorMessage)
+        raise HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
 
@@ -32,7 +38,7 @@ def get_info(CID: str):
 def get_info(qrdecode_str: str):
     result = info.main_getInfo(1, qrdecode_str)
     if result is None:
-        raise  HTTPException(status_code=406, detail=info.errorMessage)
+        raise HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
 
@@ -41,9 +47,19 @@ def get_info(qrdecode_str: str):
 def get_info(PID: str):
     result = info.component_picture_spider(PID)
     if result is None:
-        raise  HTTPException(status_code=406, detail=info.errorMessage)
+        raise HTTPException(status_code=406, detail=info.errorMessage)
     return result
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+class ProactorServer(uvicorn.Server):
+    def run(self, sockets=None):
+        loop = ProactorEventLoop()
+        asyncio.set_event_loop(loop)  # since this is the default in Python 3.10, explicit selection can also be omitted
+        asyncio.run(self.serve(sockets=sockets))
+
+
+if __name__ == '__main__':
+    config = uvicorn.Config(app=app, host="0.0.0.0", port=8000, reload=True)
+    server = ProactorServer(config=config)
+    server.run()
+
