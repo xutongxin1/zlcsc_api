@@ -171,8 +171,8 @@ class InfoSpider:
 
         info_dic = {}
         # 其他具体信息获取
-        detail = data.xpath('/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl')[0]
-        lis = detail.xpath('//div[@class="flex mt-[16px]"]')
+        # detail = data.xpath('/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl')[0]
+        lis = data.xpath('//div[@class="flex mt-[16px]"]')
         for li in lis:
             # 获取标签元素（可能是<p>或<span>）
             label_elem = li.xpath('.//*[contains(@class, "text-[#69788A] w-[70px]")]')[0]
