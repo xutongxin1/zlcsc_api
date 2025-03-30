@@ -88,10 +88,10 @@ def decode_filename_from_url(url):
 
 
 def get_product_parameters(code):
-    if not code.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section'):
-        return None
-    section_element = code.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
-    features = extract_features_from_etree(section_element)
+    # if not code.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section'):
+    #     return None
+    # section_element = code.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
+    features = extract_features_from_etree(code)
     product_parameters = "；".join([f"{key}：{value}" for key, value in features.items()])
     product_parameters += "；"
     return product_parameters
