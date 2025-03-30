@@ -196,13 +196,13 @@ class InfoSpider:
             info_dic['商品参数'] = "参数完善中"
         more_data = data.xpath('/html/body/script[1]')[0].text
         more_data = json.loads(more_data)
-        info_dic["价格表"] = format_price_data(
+        info_dic["价格"] = format_price_data(
             more_data["props"]["pageProps"]["webData"]["productRecord"]["entireProductPriceList"])
-        info_dic["库存情况"] = "广东仓：" + str(
+        info_dic["库存"] = "广东仓：" + str(
             more_data["props"]["pageProps"]["webData"]["gdWarehouseStockNumber"]) + "\n江苏仓：" + str(
             more_data["props"]["pageProps"]["webData"]["jsWarehouseStockNumber"])
         un_water_mark_image_urls_str = more_data['props']['pageProps']['webData']['productRecord'][
-            'breviaryImageUrl']
+            'luceneBreviaryImageUrls']
         un_water_mark_image_urls = un_water_mark_image_urls_str.split("\u003c$\u003e")
 
         if '描述' not in info_dic:
