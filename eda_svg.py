@@ -1,5 +1,7 @@
+import base64
 import xml.etree.ElementTree as ET
 
+import cairosvg
 # import cairosvg
 import requests
 from lxml import etree as et
@@ -59,12 +61,11 @@ def pcb_svg(svg_code: str, index: int):
     # 将修改后的SVG树转换为字符串
     new_svg_content = ET.tostring(root, encoding='unicode')
 
-    # 将新的SVG内容保存到文件中
-    # with open('./doc/pcb'+str(index)+'.svg', 'w', encoding='utf-8') as f:
-    #     f.write(new_svg_content)
-    # print("新的SVG代码已保存到 ./doc/pcb"+str(index)+".svg文件中。")
+    cairosvg.svg2png(bytestring=new_svg_content, write_to="output.png", scale=20.0)
+    with open("output.png", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
 
-    return new_svg_content
+    return encoded_string
 
 
 def sch_svg(svg_code: str, index: int):
@@ -107,11 +108,14 @@ def sch_svg(svg_code: str, index: int):
     modified_svg = et.tostring(root, encoding='utf-8', xml_declaration=False).decode('utf-8')
 
     # # 将新的SVG内容保存到文件中
-    with open('./doc/sch'+str(index)+'.svg', 'w', encoding='utf-8') as f:
-        f.write(modified_svg)
-    print("新的SVG代码已保存到 ./doc/sch"+str(index)+".svg文件中。")
-    # cairosvg.svg2png(bytestring=svg_code.encode('utf-8'), write_to='square.png')
-    return modified_svg
+    # with open('./doc/sch'+str(index)+'.svg', 'w', encoding='utf-8') as f:
+    #     f.write(modified_svg)
+    # print("新的SVG代码已保存到 ./doc/sch"+str(index)+".svg文件中。")
+    cairosvg.svg2png(bytestring=modified_svg, write_to="output.png", scale=20.0)
+    with open("output.png", "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+
+    return encoded_string
 
 
 def get_svgs(product_code: str):
