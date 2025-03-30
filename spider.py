@@ -274,19 +274,21 @@ class InfoSpider:
         component_info = self.component_page_spider(component_page_url, CID)
         if component_info is None:
             return None
-        picture_info = self.component_picture_spider(PID)
-        if picture_info is None:
-            component_info['图片链接'] = "无图片"
-        else:
-            component_info['图片链接'] = picture_info
+
+        # 旧的获取图片API
+        # picture_info = self.component_picture_spider(PID)
+        # if picture_info is None:
+        #     component_info['图片链接'] = "无图片"
+        # else:
+        #     component_info['图片链接'] = picture_info
 
         sch_svg_code, pcb_svg_code = process_svgs(CID)
         if sch_svg_code is None:
-            component_info['sch_svg'] = "未绘制库"
+            component_info['sch_svg'] = [""]
         else:
             component_info['sch_svg'] = sch_svg_code
         if pcb_svg_code is None:
-            component_info['pcb_svg'] = "未绘制库"
+            component_info['pcb_svg'] = [""]
         else:
             component_info['pcb_svg'] = pcb_svg_code
 

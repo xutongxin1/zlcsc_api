@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 
+# import cairosvg
 import requests
 from lxml import etree as et
 
@@ -106,10 +107,10 @@ def sch_svg(svg_code: str, index: int):
     modified_svg = et.tostring(root, encoding='utf-8', xml_declaration=False).decode('utf-8')
 
     # # 将新的SVG内容保存到文件中
-    # with open('./doc/sch'+str(index)+'.svg', 'w', encoding='utf-8') as f:
-    #     f.write(modified_svg)
-    # print("新的SVG代码已保存到 ./doc/sch"+str(index)+".svg文件中。")
-
+    with open('./doc/sch'+str(index)+'.svg', 'w', encoding='utf-8') as f:
+        f.write(modified_svg)
+    print("新的SVG代码已保存到 ./doc/sch"+str(index)+".svg文件中。")
+    # cairosvg.svg2png(bytestring=svg_code.encode('utf-8'), write_to='square.png')
     return modified_svg
 
 
@@ -178,7 +179,7 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error deleting {file}: {e}")
 
-    product_code = "C8734"
+    product_code = "C569043"
     sch_dict, pcb_dict = process_svgs(product_code)
     print("Schematic SVGs:", sch_dict)
     print("PCB SVGs:", pcb_dict)
