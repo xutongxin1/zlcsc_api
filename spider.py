@@ -11,6 +11,21 @@ from eda_svg import pcb_svg, process_svgs
 from playwright.async_api import async_playwright
 
 
+# 获取价格信息
+def format_price_data(data_list):
+    formatted_output = []
+    for item in data_list:
+        sp_number = item["spNumber"]
+        product_price = item["productPrice"]
+
+        # 按照要求格式化: "spNumber+：productPrice"
+        formatted_line = f"{sp_number}+：{product_price}"
+        formatted_output.append(formatted_line)
+
+    # 用换行符连接所有行
+    return "\n".join(formatted_output)
+
+
 # 从元器件详情页面提取特征
 def extract_features_from_etree(section_element):
     """
@@ -138,7 +153,6 @@ class InfoSpider:
         html_content = requests.get(page_url, headers=headers).text
         data = etree.HTML(html_content)
 
-
         # 首先确定这个信息是否正确,CID校验
         for index in range(0, 9):
             if index == 9:
@@ -182,6 +196,11 @@ class InfoSpider:
             info_dic['商品参数'] = "参数完善中"
         more_data = data.xpath('/html/body/script[1]')[0].text
         more_data = json.loads(more_data)
+        info_dic["价格表"] = format_price_data(
+            more_data["props"]["pageProps"]["webData"]["productRecord"]["entireProductPriceList"])
+        info_dic["库存情况"] = "广东仓：" + str(
+            more_data["props"]["pageProps"]["webData"]["gdWarehouseStockNumber"]) + "\n江苏仓：" + str(
+            more_data["props"]["pageProps"]["webData"]["jsWarehouseStockNumber"])
         un_water_mark_image_urls_str = more_data['props']['pageProps']['webData']['productRecord'][
             'breviaryImageUrl']
         un_water_mark_image_urls = un_water_mark_image_urls_str.split("\u003c$\u003e")
@@ -190,12 +209,22 @@ class InfoSpider:
             if more_data['props']['pageProps']['webData']['productRecord']['productName'] is not None:
                 info_dic['描述'] = more_data['props']['pageProps']['webData']['productRecord']['productName']
         # 提取pdfFileUrl
-        pdf_file_url = more_data['props']['pageProps']['webData']['productRecord']['fileTypeVOList'][0]['detailVOList'][0]['fileUrl']
-        if pdf_file_url is None:
+        try:
             pdf_file_url = \
-                data.xpath('/html/body/div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib['href']
-            info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
-            info_dic['数据手册'] = pdf_file_url.split('?')[0]
+                more_data['props']['pageProps']['webData']['productRecord']['fileTypeVOList'][0]['detailVOList'][0][
+                    'fileUrl']
+        except:
+            pdf_file_url = None
+        if pdf_file_url is None:
+            try:
+                pdf_file_url = \
+                    data.xpath('/html/body/div/div/main/div/div[1]/div/div[1]/div[3]/div/div/div/a[2]')[0].attrib[
+                        'href']
+                info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
+                info_dic['数据手册'] = pdf_file_url.split('?')[0]
+            except:
+                info_dic['数据手册名称'] = ""
+                info_dic['数据手册'] = ""
         # 提取unWaterMarkImageUrls，使用'$\u003e'作为分隔符
         else:
             info_dic['数据手册'] = "https://atta.szlcsc.com/" + pdf_file_url
@@ -222,7 +251,6 @@ class InfoSpider:
         }
         html_content = requests.get(url, headers=headers).text
         data = etree.HTML(html_content)
-
 
         # print(etree.tostring(data, pretty_print=True).decode())
         img_links = []
@@ -297,4 +325,4 @@ class InfoSpider:
 
 if __name__ == "__main__":
     info = InfoSpider()
-    print(info.component_page_spider("https://item.szlcsc.com/16815.html","16815"))
+    print(info.component_page_spider("https://item.szlcsc.com/16815.html", "16815"))
