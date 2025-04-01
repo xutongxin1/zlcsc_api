@@ -128,10 +128,10 @@ class InfoSpider:
 
         if pid:
             print(f"The pid value is: {pid[0]}")
-            return "https://item.szlcsc.com/" + pid[0] + ".html"
+            return "https://item.szlcsc.com/" + pid[0] + ".html", pid
         else:
-            print("No pid found")
-            return None
+            print("No pid found about CID: " + CID)
+            return None, None
 
     # 元器件详情页面信息爬取
     def component_page_spider(self, page_url, CID):
@@ -204,6 +204,7 @@ class InfoSpider:
         un_water_mark_image_urls_str = more_data['props']['pageProps']['webData']['productRecord'][
             'luceneBreviaryImageUrls']
         un_water_mark_image_urls = un_water_mark_image_urls_str.split("\u003c$\u003e")
+        info_dic['图片链接'] = un_water_mark_image_urls
 
         if '描述' not in info_dic:
             if more_data['props']['pageProps']['webData']['productRecord']['productName'] is not None:
@@ -229,8 +230,6 @@ class InfoSpider:
         else:
             info_dic['数据手册'] = "https://atta.szlcsc.com/" + pdf_file_url
             info_dic['数据手册名称'] = decode_filename_from_url(pdf_file_url)
-
-        info_dic['图片链接'] = un_water_mark_image_urls
 
         return info_dic
 
@@ -287,7 +286,7 @@ class InfoSpider:
         #     component_page_url = data
         # Input URL
 
-        component_page_url = self.search_page_spider(CID)
+        component_page_url, pid = self.search_page_spider(CID)
         if component_page_url is None:  # 检查链接是否存在
             self.errorMessage = "在搜索页面中无法找到该器件"
             return None
@@ -320,6 +319,7 @@ class InfoSpider:
         else:
             component_info['pcb_svg'] = pcb_svg_code
 
+        component_info['PID'] = pid[0]
         return component_info
 
 
