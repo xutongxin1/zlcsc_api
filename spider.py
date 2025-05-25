@@ -39,7 +39,7 @@ def extract_features_from_etree(section_element):
     """
     features = {}
     # 找到所有 class 为 'ant-table-tbody' 的 tbody 元素
-    tbodies = section_element.xpath(".//tbody[@class='ant-table-tbody']")
+    tbodies = section_element.xpath(".//table[@class='w-full caption-bottom text-sm']")
     for tbody in tbodies:
         # 找到所有 tr 元素
         trs = tbody.xpath(".//tr")
@@ -88,9 +88,6 @@ def decode_filename_from_url(url):
 
 
 def get_product_parameters(code):
-    # if not code.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section'):
-    #     return None
-    # section_element = code.xpath('//div/div/main/div/div[1]/div/div[1]/div[2]/div/section')[0]
     features = extract_features_from_etree(code)
     product_parameters = "；".join([f"{key}：{value}" for key, value in features.items()])
     product_parameters += "；"
