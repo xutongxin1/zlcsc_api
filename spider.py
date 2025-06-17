@@ -121,11 +121,11 @@ class InfoSpider:
         html_content = requests.get(url, headers=headers).text
 
         data = etree.HTML(html_content)
-        pid = data.xpath('//div[@id="shop-list"]/table[1]/@pid')
+        pid = re.search(r'/(\d+)\.html', data.xpath('//meta[@itemprop="url"][1]/@content')[0]).group(1)
 
         if pid:
-            print(f"The pid value is: {pid[0]}")
-            return "https://item.szlcsc.com/" + pid[0] + ".html", pid
+            print(f"The pid value is: {pid}")
+            return "https://item.szlcsc.com/" + pid + ".html", pid
         else:
             print("No pid found about CID: " + CID)
             return None, None
