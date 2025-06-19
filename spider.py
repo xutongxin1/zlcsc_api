@@ -150,18 +150,18 @@ class InfoSpider:
         html_content = requests.get(page_url, headers=headers).text
         data = etree.HTML(html_content)
 
-        # 首先确定这个信息是否正确,CID校验
-        for index in range(0, 9):
-            if index == 9:
-                self.errorMessage = "在搜索页面中无法找到该器件"
-                return None
-            if not data.xpath(
-                    f'/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl/div[{index}]/dd/text()'):
-                continue
-            if data.xpath(f'/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl/div[{index}]/dd/text()')[
-                0] == CID:
-                print("CID校验成功")
-                break
+        # # 首先确定这个信息是否正确,CID校验
+        # for index in range(0, 9):
+        #     if index == 9:
+        #         self.errorMessage = "在搜索页面中无法找到该器件"
+        #         return None
+        #     if not data.xpath(
+        #             f'/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl/div[{index}]/dd/text()'):
+        #         continue
+        #     if data.xpath(f'/html/body/div[1]/div/main/div/div/section[1]/div[2]/div[3]/dl/div[{index}]/dd/text()')[
+        #         0] == CID:
+        #         print("CID校验成功")
+        #         break
 
         # print(etree.tostring(data, pretty_print=True).decode())
         # 读取商品参数
@@ -186,8 +186,13 @@ class InfoSpider:
                 continue
             info_dic[label] = value
 
+        #再次校验
+        if info_dic["商品编号"]!=CID:
+            self.errorMessage = "在立创商城搜索页面中无法找到该器件"
+            return None
+
         product_parameters = get_product_parameters(data)
-        if product_parameters is not None:
+        if product_parameters is not None or product_parameters==";":
             info_dic['商品参数'] = product_parameters
         else:
             info_dic['商品参数'] = "参数完善中"
@@ -285,7 +290,7 @@ class InfoSpider:
 
         component_page_url, pid = self.search_page_spider(CID)
         if component_page_url is None:  # 检查链接是否存在
-            self.errorMessage = "在搜索页面中无法找到该器件"
+            self.errorMessage = "在立创商城搜索页面中无法找到该器件"
             return None
 
         # Using regex to extract the digits before '.html'
