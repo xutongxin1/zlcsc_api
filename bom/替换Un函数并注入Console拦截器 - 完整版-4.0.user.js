@@ -61,7 +61,7 @@
         'use strict';
         console.log('Console拦截器已注入并开始运行...');
 
-        const serverUrl = 'http://127.0.0.1:8000/log'; // 替换为你的HTTP服务器地址和端口
+        const serverUrl = 'http://127.0.0.1:18888/log'; // 替换为你的HTTP服务器地址和端口
 
         // 保存原始的console方法引用
         const originalConsole = {
