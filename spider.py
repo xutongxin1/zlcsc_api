@@ -309,7 +309,7 @@ class InfoSpider:
         # if picture_info is None:
         #     component_info['图片链接'] = "无图片"
         # else:
-        #     component_info['图片链接'] = picture_info
+        #     component_info['图片链接'] = picture_info 
 
         sch_svg_code, pcb_svg_code = process_svgs(CID)
         if sch_svg_code is None:
@@ -321,7 +321,7 @@ class InfoSpider:
         else:
             component_info['pcb_svg'] = pcb_svg_code
 
-        component_info['PID'] = pid[0]
+        component_info['PID'] = PID
         return component_info
 
 
