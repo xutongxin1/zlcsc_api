@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         替换Vn函数并注入Console拦截器
 // @namespace    http://tampermonkey.net/
-// @version      5.0
+// @version      5.1
 // @description  在HTML加载前替换Vn函数并注入console日志拦截器
 // @author       You
 // @match        file:///*InteractiveBOM*.html
@@ -41,7 +41,7 @@
             // 遍历所有ID的数据，找到匹配的ID并更新光标位置
             state.allIdsData.forEach(item => {
                 if (item.UniqueID === uniqueId) {
-                    console.log(\`器件编号:\${item.Customer_Component_Code}, 器件名称:\${item.Customer_Comment}, 封装:\${item.Customer_Footprint_Name}\`);
+                    console.log(\`器件编号:\${item.Customer_Component_Code}, 器件型号:\${item.Customer_Comment}, 封装:\${item.Customer_Footprint_Name}\`);
                     context.cursorPosition = {
                         x: item["Mid X"] / Mi, // 假设Mi是一个已定义的缩放因子
                         y: item["Mid Y"] / Mi
