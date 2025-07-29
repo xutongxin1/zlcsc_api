@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import requests
 from lxml import etree  # 对已经获得的数据作预处理
 import re
@@ -9,6 +11,9 @@ from playwright.sync_api import sync_playwright
 
 from eda_svg import pcb_svg, process_svgs
 from playwright.async_api import async_playwright
+from cachetools import TTLCache
+
+component_cache = TTLCache(maxsize=1000, ttl=18000)  # 缓存5小时
 
 
 # 获取价格信息
@@ -100,9 +105,16 @@ class InfoSpider:
     def __init__(self):
         print("init")
 
+    @lru_cache(maxsize=1000)
+    def cached_search_page_spider(self, cid: str):
+        """
+        带缓存的搜索函数，避免重复查询
+        """
+        return self.search_page_spider(cid)
+
     # 从搜索页面获取第一个元器件的详情页面
-    def search_page_spider(self, CID):
-        url = 'https://so.szlcsc.com/global.html?k=' + str(CID)
+    def search_page_spider(self, cid: str):
+        url = 'https://so.szlcsc.com/global.html?k=' + cid
 
         # with sync_playwright() as p:
         #     browser = p.chromium.launch()
@@ -127,8 +139,25 @@ class InfoSpider:
             print(f"The pid value is: {pid}")
             return "https://item.szlcsc.com/" + pid + ".html", pid
         else:
-            print("No pid found about CID: " + CID)
+            print("No pid found about CID: " + cid)
             return None, None
+
+    def cached_component_page_spider(self, page_url: str, cid: str):
+        """
+        带TTL缓存的component_page_spider包装函数
+        """
+
+        # 检查缓存中是否存在
+        if cid in component_cache:
+            return component_cache[cid]
+
+        # 缓存未命中，调用原函数
+        result = self.component_page_spider(page_url, cid)
+
+        # 存储到缓存
+        component_cache[cid] = result
+
+        return result
 
     # 元器件详情页面信息爬取
     def component_page_spider(self, page_url, CID):
@@ -186,13 +215,13 @@ class InfoSpider:
                 continue
             info_dic[label] = value
 
-        #再次校验
-        if info_dic["商品编号"]!=CID:
+        # 再次校验
+        if info_dic["商品编号"] != CID:
             self.errorMessage = "在立创商城搜索页面中无法找到该器件"
             return None
 
         product_parameters = get_product_parameters(data)
-        if product_parameters is not None or product_parameters==";":
+        if product_parameters is not None or product_parameters == ";":
             info_dic['商品参数'] = product_parameters
         else:
             info_dic['商品参数'] = "参数完善中"
@@ -288,7 +317,7 @@ class InfoSpider:
         #     component_page_url = data
         # Input URL
 
-        component_page_url, pid = self.search_page_spider(CID)
+        component_page_url, pid = self.cached_search_page_spider(CID)
         if component_page_url is None:  # 检查链接是否存在
             self.errorMessage = "在立创商城搜索页面中无法找到该器件"
             return None
@@ -300,7 +329,7 @@ class InfoSpider:
         PID = match.group(1) if match else None
 
         print(PID)
-        component_info = self.component_page_spider(component_page_url, CID)
+        component_info = self.cached_component_page_spider(component_page_url, CID)
         if component_info is None:
             return None
 
